@@ -1,3 +1,5 @@
+-- Credits to Fate
+
 local Drawing = {}
 
 local game = game
