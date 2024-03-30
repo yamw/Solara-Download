@@ -1,372 +1,510 @@
--- Credits to Fate
-
-local Drawing = {}
-
-local game = game
-local GetService, FindFirstChild = game.GetService, game.FindFirstChild
-local IsA = game.IsA
-local Vector2new, Instancenew, UDim2new = Vector2.new, Instance.new, UDim2.new
-
-local Workspace = GetService(game, "Workspace");
-local Camera = FindFirstChild(Workspace, "Camera");
-local CoreGui = GetService(game, "CoreGui");
-
-local BaseDrawingProperties = setmetatable({
-    Visible = false,
-    Color = Color3.new(),
-    Transparency = 0,
-    Remove = function()
-    end
+-- services
+local coreGui = game:GetService("CoreGui")
+-- objects
+local camera = workspace.CurrentCamera
+local drawingUI = Instance.new("ScreenGui")
+drawingUI.Name = "Drawing"
+drawingUI.IgnoreGuiInset = true
+drawingUI.DisplayOrder = 0x7fffffff
+drawingUI.Parent = coreGui
+-- variables
+local drawingIndex = 0
+local uiStrokes = table.create(0)
+local baseDrawingObj = setmetatable({
+	Visible = true,
+	ZIndex = 0,
+	Transparency = 1,
+	Color = Color3.new(),
+	Remove = function(self)
+		setmetatable(self, nil)
+	end
 }, {
-    __add = function(tbl1, tbl2)
-        local new = {}
-        for i, v in next, tbl1 do
-            new[i] = v
-        end
-        for i, v in next, tbl2 do
-            new[i] = v
-        end
-        return new
-    end
+	__add = function(t1, t2)
+		local result = table.clone(t1)
+
+		for index, value in t2 do
+			result[index] = value
+		end
+		return result
+	end
 })
-
-Drawing.new = function(Type, UI)
-    UI = UI and IsA(UI, "ScreenGui") and UI or Instancenew("ScreenGui", CoreGui) or Instancenew("ScreenGui", CoreGui);
-
-    if (Type == "Line") then
-        local LineProperties = ({
-            To = Vector2new(),
-            From = Vector2new(),
-            Thickness = 1,
-        } + BaseDrawingProperties)
-
-        local LineFrame = Instancenew("Frame");
-        LineFrame.AnchorPoint = Vector2new(0.5, 0.5);
-        LineFrame.BorderSizePixel = 0
-
-        LineFrame.BackgroundColor3 = LineProperties.Color
-        LineFrame.Visible = LineProperties.Visible
-        LineFrame.BackgroundTransparency = LineProperties.Transparency
-
-
-        LineFrame.Parent = UI
-
-        return setmetatable({}, {
-            __newindex = (function(self, Property, Value)
-                if (Property == "To") then
-                    local To = Value
-                    local Direction = (To - LineProperties.From);
-                    local Center = (To + LineProperties.From) / 2
-                    local Distance = Direction.Magnitude
-                    local Theta = math.atan2(Direction.Y, Direction.X);
-
-                    LineFrame.Position = UDim2.fromOffset(Center.X, Center.Y);
-                    LineFrame.Rotation = math.deg(Theta);
-                    LineFrame.Size = UDim2.fromOffset(Distance, LineProperties.Thickness);
-
-                    LineProperties.To = To
-                end
-                if (Property == "From") then
-                    local From = Value
-                    local Direction = (LineProperties.To - From);
-                    local Center = (LineProperties.To + From) / 2
-                    local Distance = Direction.Magnitude
-                    local Theta = math.atan2(Direction.Y, Direction.X);
-
-                    LineFrame.Position = UDim2.fromOffset(Center.X, Center.Y);
-                    LineFrame.Rotation = math.deg(Theta);
-                    LineFrame.Size = UDim2.fromOffset(Distance, LineProperties.Thickness);
-
-
-                    LineProperties.From = From
-                end
-                if (Property == "Visible") then
-                    LineFrame.Visible = Value
-                    LineProperties.Visible = Value
-                end
-                if (Property == "Thickness") then
-                    Value = Value < 1 and 1 or Value
-
-                    local Direction = (LineProperties.To - LineProperties.From);
-                    local Distance = Direction.Magnitude
-
-                    LineFrame.Size = UDim2.fromOffset(Distance, Value);
-
-                    LineProperties.Thickness = Value
-                end
-                if (Property == "Transparency") then
-                    LineFrame.BackgroundTransparency = 1 - Value
-                    LineProperties.Transparency = Value
-                end
-                if (Property == "Color") then
-                    LineFrame.BackgroundColor3 = Value
-                    LineProperties.Color = Value 
-                end
-            end),
-            __index = (function(self, Property)
-                if (Property == "Remove") then
-                    return (function()
-                        LineFrame:Destroy();
-                    end)
-                end
-                return LineProperties[Property]
-            end)
-        })
-    end
-
-    if (Type == "Circle") then
-        local CircleProperties = ({
-            Radius = 150,
-            Filled = false,
-            Position = Vector2new()
-        } + BaseDrawingProperties)
-
-        local CircleFrame = Instancenew("Frame");
-
-        CircleFrame.AnchorPoint = Vector2new(0.5, 0.5);
-        CircleFrame.BorderSizePixel = 0
-
-        CircleFrame.BackgroundColor3 = CircleProperties.Color
-        CircleFrame.Visible = CircleProperties.Visible
-        CircleFrame.BackgroundTransparency = CircleProperties.Transparency
-
-        local Corner = Instancenew("UICorner", CircleFrame);
-        Corner.CornerRadius = UDim.new(1, 0);
-        CircleFrame.Size = UDim2new(0, CircleProperties.Radius, 0, CircleProperties.Radius);
-
-        CircleFrame.Parent = UI
-
-        return setmetatable({}, {
-            __newindex = (function(self, Property, Value)
-                if (Property == "Radius") then
-                    CircleFrame.Size = UDim2new(0, Value, 0, Value);
-                    CircleProperties.Radius = Value
-                end
-                if (Property == "Position") then
-                    CircleFrame.Position = UDim2new(0, Value.X, 0, Value.Y);
-                    CircleProperties.Position = Value
-                end
-                if (Property == "Filled") then
-                    CircleFrame.BackgroundTransparency = Value == true and 0 or 0.8
-                    CircleProperties.Filled = Value
-                end
-                if (Property == "Color") then
-                    CircleFrame.BackgroundColor3 = Value
-                    CircleProperties.Color = Value
-                end
-                if (Property == "Visible") then
-                    CircleFrame.Visible = Value
-                    CircleProperties.Visible = Value
-                end
-                if (Property == "Transparency") then
-
-                end
-            end),
-            __index = (function(self, Property)
-                if (Property == "Remove") then
-                    return (function()
-                        CircleFrame:Destroy();
-                    end)
-                end
-                
-                return CircleProperties[Property]
-            end)
-        })
-    end
-
-    if (Type == "Text") then
-        local TextProperties = ({
-            Text = "",
-            Size = 0,
-            Center = false,
-            Outline = false,
-            OutlineColor = Color3.new(),
-            Position = Vector2new(),
-        } + BaseDrawingProperties)
-
-        local TextLabel = Instancenew("TextLabel");
-
-        TextLabel.AnchorPoint = Vector2new(0.5, 0.5);
-        TextLabel.BorderSizePixel = 0
-        TextLabel.Size = UDim2new(0, 200, 0, 50);
-        TextLabel.Font = Enum.Font.SourceSans
-        TextLabel.TextSize = 14
-
-        TextLabel.TextColor3 = TextProperties.Color
-        TextLabel.Visible = TextProperties.Visible
-        TextLabel.BackgroundTransparency = 1
-        TextLabel.TextTransparency = 1 - TextProperties.Transparency
-        
-        TextLabel.Parent = UI
-
-        return setmetatable({}, {
-            __newindex = (function(self, Property, Value)
-                if (Property == "Text") then
-                    TextLabel.Text = Value
-                    TextProperties.Text = Value
-                end
-                if (Property == "Position") then
-                    TextLabel.Position = UDim2new(0, Value.X, 0, Value.Y);
-                    TextProperties.Position = Value
-                end
-                if (Property == "Size") then
-                    TextLabel.TextSize = Value
-                    TextProperties.Size = Value
-                end
-                if (Property == "Color") then
-                    TextLabel.TextColor3 = Value
-                    TextProperties.Color = Value
-                end
-                if (Property == "Transparency") then
-                    TextLabel.TextTransparency = 1 - Value
-                    TextProperties.Transparency = Value
-                end
-                if (Property == "Visible") then
-                    TextLabel.Visible = Value
-                    TextProperties.Visible = Value
-                end
-                if (Property == "Center") then
-                    TextLabel.Position = Value == true and UDim2new(0, Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2, 0)
-                    TextProperties.Center = Value
-                end
-            end),
-            __index = (function(self, Property)
-                if (Property == "Remove") then
-                    return (function()
-                        TextLabel:Destroy();
-                    end)
-                end
-                
-                return TextProperties[Property]
-            end)
-        })
-    end
-
-    if (Type == "Square") then
-        local SquareProperties = ({
-            Thickness = 1,
-            Size = Vector2new(),
-            Position = Vector2new(),
-            Filled = false,
-        } + BaseDrawingProperties);
-
-        local SquareFrame = Instancenew("Frame");
-        
-        SquareFrame.AnchorPoint = Vector2new(0.5, 0.5);
-        SquareFrame.BorderSizePixel = 0
-
-        SquareFrame.Visible = false
-        SquareFrame.Parent = UI
-
-        return setmetatable({}, {
-            __newindex = (function(self, Property, Value)
-                if (Property == "Size") then
-                    SquareFrame.Size = UDim2new(0, Value.X, 0, Value.Y);
-                    SquareProperties.Text = Value
-                end
-                if (Property == "Position") then
-                    SquareFrame.Position = UDim2new(0, Value.X, 0, Value.Y);
-                    SquareProperties.Position = Value
-                end
-                if (Property == "Size") then
-                    SquareFrame.Size = UDim2new(0, Value.X, 0, Value.Y);
-                    SquareProperties.Size = Value
-                end
-                if (Property == "Color") then
-                    SquareFrame.BackgroundColor3 = Value
-                    SquareProperties.Color = Value
-                end
-                if (Property == "Transparency") then
-                    SquareFrame.BackgroundTransparency = 1 - Value
-                    SquareProperties.Transparency = Value
-                end
-                if (Property == "Visible") then
-                    SquareFrame.Visible = Value
-                    SquareProperties.Visible = Value
-                end
-                if (Property == "Filed") then -- requires beta
-
-                end
-            end),
-            __index = (function(self, Property)
-                if (Property == "Remove") then
-                    return (function()
-                        SquareFrame:Destroy();
-                    end)
-                end
-                
-                return SquareProperties[Property]
-            end)
-        })
-    end
-
-    if (Type == "Image") then
-        local ImageProperties = ({
-            Data = "rbxassetid://848623155", -- roblox assets only rn
-            Size = Vector2new(),
-            Position = Vector2new(),
-            Rounding = 0,
-        });
-
-        local ImageLabel = Instancenew("ImageLabel");
-
-        ImageLabel.AnchorPoint = Vector2new(0.5, 0.5);
-        ImageLabel.BorderSizePixel = 0
-        ImageLabel.ScaleType = Enum.ScaleType.Stretch
-        ImageLabel.Transparency = 1
-        
-        ImageLabel.Visible = false
-        ImageLabel.Parent = UI
-
-        return setmetatable({}, {
-            __newindex = (function(self, Property, Value)
-                if (Property == "Size") then
-                    ImageLabel.Size = UDim2new(0, Value.X, 0, Value.Y);
-                    ImageProperties.Text = Value
-                end
-                if (Property == "Position") then
-                    ImageLabel.Position = UDim2new(0, Value.X, 0, Value.Y);
-                    ImageProperties.Position = Value
-                end
-                if (Property == "Size") then
-                    ImageLabel.Size = UDim2new(0, Value.X, 0, Value.Y);
-                    ImageProperties.Size = Value
-                end
-                if (Property == "Transparency") then
-                    ImageLabel.ImageTransparency = 1 - Value
-                    ImageProperties.Transparency = Value
-                end
-                if (Property == "Visible") then
-                    ImageLabel.Visible = Value
-                    ImageProperties.Visible = Value
-                end
-                if (Property == "Color") then
-                    ImageLabel.ImageColor3 = Value
-                    ImageLabel.Color = Value
-                end
-                if (Property == "Data") then
-                    ImageLabel.Image = Value
-                    ImageProperties.Data = Value
-                end
-            end),
-            __index = (function(self, Property)
-                if (Property == "Remove") then
-                    return (function()
-                        ImageLabel:Destroy();
-                    end)
-                end
-                
-                return ImageLabel[Property]
-            end)
-        })
-    end
-
-
-    if (Type == "Quad") then -- will add later
-        return setmetatable({}, {
-            
-        });
-    end
+local drawingFontsEnum = {
+	[0] = Font.fromEnum(Enum.Font.Roboto),
+	[1] = Font.fromEnum(Enum.Font.Legacy),
+	[2] = Font.fromEnum(Enum.Font.SourceSans),
+	[3] = Font.fromEnum(Enum.Font.RobotoMono),
+}
+-- function
+local function getFontFromIndex(fontIndex: number): Font
+	return drawingFontsEnum[fontIndex]
 end
 
-return Drawing
+local function convertTransparency(transparency: number): number
+	return math.clamp(1 - transparency, 0, 1)
+end
+-- main
+local DrawingLib = {}
+DrawingLib.Fonts = {
+	["UI"] = 0,
+	["System"] = 1,
+	["Flex"] = 2,
+	["Monospace"] = 3
+}
+
+function DrawingLib.new(drawingType)
+	drawingIndex += 1
+	if drawingType == "Line" then
+		local lineObj = ({
+			From = Vector2.zero,
+			To = Vector2.zero,
+			Thickness = 1
+		} + baseDrawingObj)
+
+		local lineFrame = Instance.new("Frame")
+		lineFrame.Name = drawingIndex
+		lineFrame.AnchorPoint = (Vector2.one * .5)
+		lineFrame.BorderSizePixel = 0
+
+		lineFrame.BackgroundColor3 = lineObj.Color
+		lineFrame.Visible = lineObj.Visible
+		lineFrame.ZIndex = lineObj.ZIndex
+		lineFrame.BackgroundTransparency = convertTransparency(lineObj.Transparency)
+
+		lineFrame.Size = UDim2.new()
+
+		lineFrame.Parent = drawingUI
+		return setmetatable(table.create(0), {
+			__newindex = function(_, index, value)
+				if typeof(lineObj[index]) == "nil" then return end
+
+				if index == "From" then
+					local direction = (lineObj.To - value)
+					local center = (lineObj.To + value) / 2
+					local distance = direction.Magnitude
+					local theta = math.deg(math.atan2(direction.Y, direction.X))
+
+					lineFrame.Position = UDim2.fromOffset(center.X, center.Y)
+					lineFrame.Rotation = theta
+					lineFrame.Size = UDim2.fromOffset(distance, lineObj.Thickness)
+				elseif index == "To" then
+					local direction = (value - lineObj.From)
+					local center = (value + lineObj.From) / 2
+					local distance = direction.Magnitude
+					local theta = math.deg(math.atan2(direction.Y, direction.X))
+
+					lineFrame.Position = UDim2.fromOffset(center.X, center.Y)
+					lineFrame.Rotation = theta
+					lineFrame.Size = UDim2.fromOffset(distance, lineObj.Thickness)
+				elseif index == "Thickness" then
+					local distance = (lineObj.To - lineObj.From).Magnitude
+
+					lineFrame.Size = UDim2.fromOffset(distance, value)
+				elseif index == "Visible" then
+					lineFrame.Visible = value
+				elseif index == "ZIndex" then
+					lineFrame.ZIndex = value
+				elseif index == "Transparency" then
+					lineFrame.BackgroundTransparency = convertTransparency(value)
+				elseif index == "Color" then
+					lineFrame.BackgroundColor3 = value
+				end
+				lineObj[index] = value
+			end,
+			__index = function(self, index)
+				if index == "Remove" then
+					return function()
+						lineFrame:Destroy()
+						lineObj.Remove(self)
+						return lineObj:Remove()
+					end
+				end
+				return lineObj[index]
+			end
+		})
+	elseif drawingType == "Text" then
+		local textObj = ({
+			Text = "",
+			Font = DrawingLib.Fonts.UI,
+			Size = 0,
+			Position = Vector2.zero,
+			Center = false,
+			Outline = false,
+			OutlineColor = Color3.new()
+		} + baseDrawingObj)
+
+		local textLabel, uiStroke = Instance.new("TextLabel"), Instance.new("UIStroke")
+		textLabel.Name = drawingIndex
+		textLabel.AnchorPoint = (Vector2.one * .5)
+		textLabel.BorderSizePixel = 0
+		textLabel.BackgroundTransparency = 1
+
+		textLabel.Visible = textObj.Visible
+		textLabel.TextColor3 = textObj.Color
+		textLabel.TextTransparency = convertTransparency(textObj.Transparency)
+		textLabel.ZIndex = textObj.ZIndex
+
+		textLabel.FontFace = getFontFromIndex(textObj.Font)
+		textLabel.TextSize = textObj.Size
+
+		textLabel:GetPropertyChangedSignal("TextBounds"):Connect(function()
+			local textBounds = textLabel.TextBounds
+			local offset = textBounds / 2
+
+			textLabel.Size = UDim2.fromOffset(textBounds.X, textBounds.Y)
+			textLabel.Position = UDim2.fromOffset(textObj.Position.X + (if not textObj.Center then offset.X else 0), textObj.Position.Y + offset.Y)
+		end)
+
+		uiStroke.Thickness = 1
+		uiStroke.Enabled = textObj.Outline
+		uiStroke.Color = textObj.Color
+
+		textLabel.Parent, uiStroke.Parent = drawingUI, textLabel
+		return setmetatable(table.create(0), {
+			__newindex = function(_, index, value)
+				if typeof(textObj[index]) == "nil" then return end
+
+				if index == "Text" then
+					textLabel.Text = value
+				elseif index == "Font" then
+					value = math.clamp(value, 0, 3)
+					textLabel.FontFace = getFontFromIndex(value)
+				elseif index == "Size" then
+					textLabel.TextSize = value
+				elseif index == "Position" then
+					local offset = textLabel.TextBounds / 2
+
+					textLabel.Position = UDim2.fromOffset(value.X + (if not textObj.Center then offset.X else 0), value.Y + offset.Y)
+				elseif index == "Center" then
+					local position = (
+						if value then
+							camera.ViewportSize / 2
+						else
+							textObj.Position
+					)
+
+					textLabel.Position = UDim2.fromOffset(position.X, position.Y)
+				elseif index == "Outline" then
+					uiStroke.Enabled = value
+				elseif index == "OutlineColor" then
+					uiStroke.Color = value
+				elseif index == "Visible" then
+					textLabel.Visible = value
+				elseif index == "ZIndex" then
+					textLabel.ZIndex = value
+				elseif index == "Transparency" then
+					local transparency = convertTransparency(value)
+
+					textLabel.TextTransparency = transparency
+					uiStroke.Transparency = transparency
+				elseif index == "Color" then
+					textLabel.TextColor3 = value
+				end
+				textObj[index] = value
+			end,
+			__index = function(self, index)
+				if index == "Remove" then
+					return function()
+						textLabel:Destroy()
+						textObj.Remove(self)
+						return textObj:Remove()
+					end
+				elseif index == "TextBounds" then
+					return textLabel.TextBounds
+				end
+				return textObj[index]
+			end
+		})
+	elseif drawingType == "Circle" then
+		local circleObj = ({
+			Radius = 150,
+			Position = Vector2.zero,
+			Thickness = .7,
+			Filled = false
+		} + baseDrawingObj)
+
+		local circleFrame, uiCorner, uiStroke = Instance.new("Frame"), Instance.new("UICorner"), Instance.new("UIStroke")
+		circleFrame.Name = drawingIndex
+		circleFrame.AnchorPoint = (Vector2.one * .5)
+		circleFrame.BorderSizePixel = 0
+
+		circleFrame.BackgroundTransparency = (if circleObj.Filled then convertTransparency(circleObj.Transparency) else 1)
+		circleFrame.BackgroundColor3 = circleObj.Color
+		circleFrame.Visible = circleObj.Visible
+		circleFrame.ZIndex = circleObj.ZIndex
+
+		uiCorner.CornerRadius = UDim.new(1, 0)
+		circleFrame.Size = UDim2.fromOffset(circleObj.Radius, circleObj.Radius)
+
+		uiStroke.Thickness = circleObj.Thickness
+		uiStroke.Enabled = not circleObj.Filled
+		uiStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+		circleFrame.Parent, uiCorner.Parent, uiStroke.Parent = drawingUI, circleFrame, circleFrame
+		return setmetatable(table.create(0), {
+			__newindex = function(_, index, value)
+				if typeof(circleObj[index]) == "nil" then return end
+
+				if index == "Radius" then
+					local radius = value * 2
+					circleFrame.Size = UDim2.fromOffset(radius, radius)
+				elseif index == "Position" then
+					circleFrame.Position = UDim2.fromOffset(value.X, value.Y)
+				elseif index == "Thickness" then
+					value = math.clamp(value, .6, 0x7fffffff)
+					uiStroke.Thickness = value
+				elseif index == "Filled" then
+					circleFrame.BackgroundTransparency = (if value then convertTransparency(circleObj.Transparency) else 1)
+					uiStroke.Enabled = not value
+				elseif index == "Visible" then
+					circleFrame.Visible = value
+				elseif index == "ZIndex" then
+					circleFrame.ZIndex = value
+				elseif index == "Transparency" then
+					local transparency = convertTransparency(value)
+
+					circleFrame.BackgroundTransparency = (if circleObj.Filled then transparency else 1)
+					uiStroke.Transparency = transparency
+				elseif index == "Color" then
+					circleFrame.BackgroundColor3 = value
+					uiStroke.Color = value
+				end
+				circleObj[index] = value
+			end,
+			__index = function(self, index)
+				if index == "Remove" then
+					return function()
+						circleFrame:Destroy()
+						circleObj.Remove(self)
+						return circleObj:Remove()
+					end
+				end
+				return circleObj[index]
+			end
+		})
+	elseif drawingType == "Square" then
+		local squareObj = ({
+			Size = Vector2.zero,
+			Position = Vector2.zero,
+			Thickness = .7,
+			Filled = false
+		} + baseDrawingObj)
+
+		local squareFrame, uiStroke = Instance.new("Frame"), Instance.new("UIStroke")
+		squareFrame.Name = drawingIndex
+		squareFrame.BorderSizePixel = 0
+
+		squareFrame.BackgroundTransparency = (if squareObj.Filled then convertTransparency(squareObj.Transparency) else 1)
+		squareFrame.ZIndex = squareObj.ZIndex
+		squareFrame.BackgroundColor3 = squareObj.Color
+		squareFrame.Visible = squareObj.Visible
+
+		uiStroke.Thickness = squareObj.Thickness
+		uiStroke.Enabled = not squareObj.Filled
+		uiStroke.LineJoinMode = Enum.LineJoinMode.Miter
+
+		squareFrame.Parent, uiStroke.Parent = drawingUI, squareFrame
+		return setmetatable(table.create(0), {
+			__newindex = function(_, index, value)
+				if typeof(squareObj[index]) == "nil" then return end
+
+				if index == "Size" then
+					squareFrame.Size = UDim2.fromOffset(value.X, value.Y)
+				elseif index == "Position" then
+					squareFrame.Position = UDim2.fromOffset(value.X, value.Y)
+				elseif index == "Thickness" then
+					value = math.clamp(value, 0.6, 0x7fffffff)
+					uiStroke.Thickness = value
+				elseif index == "Filled" then
+					squareFrame.BackgroundTransparency = (if value then convertTransparency(squareObj.Transparency) else 1)
+					uiStroke.Enabled = not value
+				elseif index == "Visible" then
+					squareFrame.Visible = value
+				elseif index == "ZIndex" then
+					squareFrame.ZIndex = value
+				elseif index == "Transparency" then
+					local transparency = convertTransparency(value)
+
+					squareFrame.BackgroundTransparency = (if squareObj.Filled then transparency else 1)
+					uiStroke.Transparency = transparency
+				elseif index == "Color" then
+					uiStroke.Color = value
+					squareFrame.BackgroundColor3 = value
+				end
+				squareObj[index] = value
+			end,
+			__index = function(self, index)
+				if index == "Remove" then
+					return function()
+						squareFrame:Destroy()
+						squareObj.Remove(self)
+						return squareObj:Remove()
+					end
+				end
+				return squareObj[index]
+			end
+		})
+	elseif drawingType == "Image" then
+		local imageObj = ({
+			Data = "",
+			DataURL = "rbxassetid://0",
+			Size = Vector2.zero,
+			Position = Vector2.zero
+		} + baseDrawingObj)
+
+		local imageFrame = Instance.new("ImageLabel")
+		imageFrame.Name = drawingIndex
+		imageFrame.BorderSizePixel = 0
+		imageFrame.ScaleType = Enum.ScaleType.Stretch
+		imageFrame.BackgroundTransparency = 1
+
+		imageFrame.Visible = imageObj.Visible
+		imageFrame.ZIndex = imageObj.ZIndex
+		imageFrame.ImageTransparency = convertTransparency(imageObj.Transparency)
+		imageFrame.ImageColor3 = imageObj.Color
+
+		imageFrame.Parent = drawingUI
+		return setmetatable(table.create(0), {
+			__newindex = function(_, index, value)
+				if typeof(imageObj[index]) == "nil" then return end
+
+				if index == "Data" then
+					-- later
+				elseif index == "DataURL" then -- temporary property
+					imageFrame.Image = value
+				elseif index == "Size" then
+					imageFrame.Size = UDim2.fromOffset(value.X, value.Y)
+				elseif index == "Position" then
+					imageFrame.Position = UDim2.fromOffset(value.X, value.Y)
+				elseif index == "Visible" then
+					imageFrame.Visible = value
+				elseif index == "ZIndex" then
+					imageFrame.ZIndex = value
+				elseif index == "Transparency" then
+					imageFrame.ImageTransparency = convertTransparency(value)
+				elseif index == "Color" then
+					imageFrame.ImageColor3 = value
+				end
+				imageObj[index] = value
+			end,
+			__index = function(self, index)
+				if index == "Remove" then
+					return function()
+						imageFrame:Destroy()
+						imageObj.Remove(self)
+						return imageObj:Remove()
+					end
+				elseif index == "Data" then
+					return nil -- TODO: add error here
+				end
+				return imageObj[index]
+			end
+		})
+	elseif drawingType == "Quad" then
+		local quadObj = ({
+			PointA = Vector2.zero,
+			PointB = Vector2.zero,
+			PointC = Vector2.zero,
+			PointD = Vector3.zero,
+			Thickness = 1,
+			Filled = false
+		} + baseDrawingObj)
+
+		local _linePoints = table.create(0)
+		_linePoints.A = DrawingLib.new("Line")
+		_linePoints.B = DrawingLib.new("Line")
+		_linePoints.C = DrawingLib.new("Line")
+		_linePoints.D = DrawingLib.new("Line")
+		return setmetatable(table.create(0), {
+			__newindex = function(_, index, value)
+				if typeof(quadObj[index]) == "nil" then return end
+
+				if index == "PointA" then
+					_linePoints.A.From = value
+					_linePoints.B.To = value
+				elseif index == "PointB" then
+					_linePoints.B.From = value
+					_linePoints.C.To = value
+				elseif index == "PointC" then
+					_linePoints.C.From = value
+					_linePoints.D.To = value
+				elseif index == "PointD" then
+					_linePoints.D.From = value
+					_linePoints.A.To = value
+				elseif (index == "Thickness" or index == "Visible" or index == "Color" or index == "ZIndex") then
+					for _, linePoint in _linePoints do
+						linePoint[index] = value
+					end
+				elseif index == "Filled" then
+					-- later
+				end
+				quadObj[index] = value
+			end,
+			__index = function(self, index)
+				if index == "Remove" then
+					return function()
+						for _, linePoint in _linePoints do
+							linePoint:Remove()
+						end
+
+						quadObj.Remove(self)
+						return quadObj:Remove()
+					end
+				end
+				return quadObj[index]
+			end
+		})
+	elseif drawingType == "Triangle" then
+		local triangleObj = ({
+			PointA = Vector2.zero,
+			PointB = Vector2.zero,
+			PointC = Vector2.zero,
+			Thickness = 1,
+			Filled = false
+		} + baseDrawingObj)
+
+		local _linePoints = table.create(0)
+		_linePoints.A = DrawingLib.new("Line")
+		_linePoints.B = DrawingLib.new("Line")
+		_linePoints.C = DrawingLib.new("Line")
+		return setmetatable(table.create(0), {
+			__newindex = function(_, index, value)
+				if typeof(triangleObj[index]) == "nil" then return end
+
+				if index == "PointA" then
+					_linePoints.A.From = value
+					_linePoints.B.To = value
+				elseif index == "PointB" then
+					_linePoints.B.From = value
+					_linePoints.C.To = value
+				elseif index == "PointC" then
+					_linePoints.C.From = value
+					_linePoints.A.To = value
+				elseif (index == "Thickness" or index == "Visible" or index == "Color" or index == "ZIndex") then
+					for _, linePoint in _linePoints do
+						linePoint[index] = value
+					end
+				elseif index == "Filled" then
+					-- later
+				end
+				triangleObj[index] = value
+			end,
+			__index = function(self, index)
+				if index == "Remove" then
+					return function()
+						for _, linePoint in _linePoints do
+							linePoint:Remove()
+						end
+
+						triangleObj.Remove(self)
+						return triangleObj:Remove()
+					end
+				end
+				return triangleObj[index]
+			end
+		})
+	end
+end
+
+setreadonly(DrawingLib, true)
+getgenv().Drawing = DrawingLib
+return DrawingLib
