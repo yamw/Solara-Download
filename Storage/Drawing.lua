@@ -1,3 +1,5 @@
+-- Made by jLn0n
+
 -- services
 local coreGui = game:GetService("CoreGui")
 -- objects
